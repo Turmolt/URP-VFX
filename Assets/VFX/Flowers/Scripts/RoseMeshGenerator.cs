@@ -29,13 +29,15 @@ public class RoseMeshGenerator : MeshGeneratorBase
     private float scale = 0.05f;
     private float widthScale = 1.0f;
     private float stemCurveScale = .04f;
+    private float stemCurveScaleCirc = 1.5f;
     private float curveSpeed = 0.5f;
     private int numberOfCurves = 3;
 
-    private float branchChance = 0.75f;
+    private float branchChance = 1f;
 
     private float curveOffset => id * (Mathf.PI * 2f / numberOfCurves);
 
+    private float yScale = 0.25f;
     private float runtime = 0f;
     private float delay = 1f / 45f;
 
@@ -46,10 +48,12 @@ public class RoseMeshGenerator : MeshGeneratorBase
 
     private float layerCurveVal = 0.0f;
     private int currentLayers = 0;
-    private int maxLayers = 300;
+    private int maxLayers = 250;
 
     private float prevCurveX;
     private float prevCurveZ;
+
+    private bool isVertical = false;
 #endregion
 
     void Start()
@@ -60,7 +64,8 @@ public class RoseMeshGenerator : MeshGeneratorBase
         }
         life = delay * maxLayers;
         extraBranchLife = life / 2f;
-        CreateMesh();
+        if(isVertical) CreateMeshVertical();
+        else CreateMeshCirc();
     }
 
     void GenerateCurveImage()
@@ -78,7 +83,7 @@ public class RoseMeshGenerator : MeshGeneratorBase
         VineMaterial.SetTexture("_Curve", tex);
     }
 
-    void CreateMesh()
+    void CreateMeshVertical()
     {
         curveVals = new List<(float, float)>();
 
@@ -109,10 +114,49 @@ public class RoseMeshGenerator : MeshGeneratorBase
 
         positions.Add(p);
 
-        InsertStemLayer();
+        InsertStemLayerVertical();
 
         UpdateMesh();
         
+
+    }
+
+    void CreateMeshCirc()
+    {
+        curveVals = new List<(float, float)>();
+
+        branches = new List<BranchGenerator>();
+        branchDir = new List<Vector3>();
+
+        prevCurveX = 0;
+        prevCurveZ = 0;
+
+        var curveX = Mathf.Sin(layerCurveVal + curveOffset * yScale * (2 * 1f / yScale)) * stemCurveScaleCirc;
+        var curveZ = Mathf.Cos(layerCurveVal + curveOffset * yScale * (2 * 1f / yScale)) * stemCurveScaleCirc;
+        var p = new Vector3(curveX, curveZ, 0);
+        //create base verts
+        verts.Add(p);
+        verts.Add(p);
+        verts.Add(p);
+        verts.Add(p);
+
+        var c = new Color(0, 0, 0, 0);
+        vertColors.Add(c);
+        vertColors.Add(c);
+        vertColors.Add(c);
+        vertColors.Add(c);
+
+        uv.Add(new Vector2(0, 0));
+        uv.Add(new Vector2(0f, 0.5f));
+        uv.Add(new Vector2(0f, 1f));
+        uv.Add(new Vector2(0f, 0.5f));
+
+        positions.Add(p);
+
+        InsertStemLayerVertical();
+
+        UpdateMesh();
+
 
     }
 
@@ -122,15 +166,26 @@ public class RoseMeshGenerator : MeshGeneratorBase
         if (runtime >= delay)
         {
             runtime = 0f;
-            InsertStemLayer();
-            RollForBranch();
-            MoveBranches();
-            ReshapeMesh();
+            if (isVertical)
+            {
+                InsertStemLayerVertical();
+                RollForBranchVertical();
+                MoveBranchesVertical();
+                ReshapeMeshVertical();
+            }
+            else
+            {
+                InsertStemLayerCirc();
+                RollForBranchCirc();
+                MoveBranchesCirc();
+                ReshapeMeshCirc();
+            }
+
             UpdateMesh();
         }
     }
 
-    void MoveBranches()
+    void MoveBranchesVertical()
     {
         for (int i = 0; i < branches.Count; i++)
         {
@@ -162,7 +217,7 @@ public class RoseMeshGenerator : MeshGeneratorBase
         }
     }
 
-    void RollForBranch()
+    void RollForBranchVertical()
     {
         var roll = Random.Range(0f, 1f);
         var addBranch = !(roll > branchChance);
@@ -193,7 +248,43 @@ public class RoseMeshGenerator : MeshGeneratorBase
         branches.Add(branch);
     }
 
-    void InsertStemLayer()
+    void RollForBranchCirc()
+    {
+        var roll = Random.Range(0f, 1f);
+        var addBranch = !(roll > branchChance);
+
+        if (!addBranch)
+        {
+            branchDir.Add(Vector2.zero);
+            branches.Add(null);
+            return;
+        }
+
+        (float x, float z) = curveVals[currentLayers - 1];
+
+        var pos = positions[currentLayers - 1];
+        var lastPos = positions[currentLayers - 2];
+
+        var dir = (pos - lastPos).normalized;
+        var directions = GetVectors(dir);
+
+        var tiltAmt = 0.25f;
+
+        var fb = Vector3.Lerp(directions.fwd, directions.bwd, Random.Range(0f, 1f));
+        var lr = Vector3.Lerp(directions.left, directions.right, Random.Range(0f, 1f));
+        var overall = Vector3.Lerp(fb, lr, Random.Range(0f, 1f)).normalized;
+
+//        dir = overall;
+//        dir += Vector3.Lerp(directions.left, directions.right, Random.Range(tiltAmt, 1f - tiltAmt)) * Random.Range(0f, 1f);
+  //      dir = dir.normalized;
+        var branch = Instantiate(Branch, pos, Quaternion.identity, transform) as BranchGenerator;
+        branch.StartGrowing(overall, dir);
+
+        branchDir.Add(dir);
+        branches.Add(branch);
+    }
+
+    void InsertStemLayerVertical()
     {
         var vertStart = verts.Count - 4;
         
@@ -281,7 +372,7 @@ public class RoseMeshGenerator : MeshGeneratorBase
         currentLayers++;
     }
 
-    void ReshapeMesh()
+    void ReshapeMeshVertical()
     {
         var haveToCull = currentLayers >= maxLayers;
 
@@ -355,180 +446,209 @@ public class RoseMeshGenerator : MeshGeneratorBase
             }
         }
     }
-    /*
-     
-//    void InsertStemLayer()
-//    {
-//        var vertStart = verts.Count - 4;
-        
-//        var y = (maxLayers + 1) * scale * yScale;
 
-//        layerCurveVal += scale * curveSpeed * yScale;
+    void MoveBranchesCirc()
+    {
+        for (int i = 0; i < branches.Count; i++)
+        {
+            var center = positions[i];
 
-//        var curveX = Mathf.Sin(layerCurveVal + curveOffset * yScale) * stemCurveScale;
-//        var curveZ = Mathf.Cos(layerCurveVal + curveOffset * yScale) * stemCurveScale;
-        
-//        var centerPos = new Vector3(curveX, curveZ + yOff, 0);
-//        var lastPos = positions[positions.Count - 1];
-//        var dir = (centerPos - lastPos).normalized;
+            if (i < branches.Count && branches[i] != null)
+            {
+                var b = branches[i];
+                var lifeScale = GrowthCurve.Evaluate(Mathf.Clamp01((Time.timeSinceLevelLoad - layerInfo[i].w) / (life + extraBranchLife)));
 
-////        (var left, var right, var fwd, var bwd) = GetVectors(dir);
-//        var left = new Vector3(-dir.y, dir.x).normalized;
-//        var right = -left;
-//        var fwd = new Vector3(0f, -dir.z, dir.y).normalized;
-//        var bwd = -fwd;//new Vector3(0f, dir.z, -dir.y).normalized;
+                //b.transform.position = center + dir.normalized * 0.75f * lifeScale * scale;
+                var localScale = Vector3.one * lifeScale * 0.1f;
+                b.transform.localScale = localScale;
 
-//        if (centerPos.x <= 0 && centerPos.y > 0 || centerPos.x < 0f && centerPos.y < 0)
-//        {
-//            verts.Add(centerPos + right * scale);
-//            verts.Add(centerPos + fwd * scale);
-//            verts.Add(centerPos + left * scale);
-//            verts.Add(centerPos + bwd * scale);
-//        }
-//        else
-//        {
-//            verts.Add(centerPos + right * scale);
-//            verts.Add(centerPos + bwd * scale);
-//            verts.Add(centerPos + left * scale);
-//            verts.Add(centerPos + fwd * scale);
-//        }
+            }
+        }
 
-//        uvVal += scale;
+        if (currentLayers >= maxLayers)
+        {
+            var targetBranch = branches[0];
+            branches.Remove(targetBranch);
+            branchDir.RemoveAt(0);
+            if (targetBranch != null)
+            {
+                Destroy(targetBranch.gameObject);
+            }
+        }
+    }
 
-//        uv.Add(new Vector2(uvVal, 0));
-//        uv.Add(new Vector2(uvVal, 0.5f));
-//        uv.Add(new Vector2(uvVal, 1f));
-//        uv.Add(new Vector2(uvVal, .5f));
+    void InsertStemLayerCirc()
+    {
+        var vertStart = verts.Count - 4;
 
-//        uv2.Add(new Vector2(0, 0));
-//        uv2.Add(new Vector2(0, 0));
-//        uv2.Add(new Vector2(0, 0));
-//        uv2.Add(new Vector2(0, 0));
+        var y = (maxLayers + 1) * scale * yScale;
 
-//        var c = new Color(centerPos.x, centerPos.y, centerPos.z, 1);
-//        vertColors.Add(c);
-//        vertColors.Add(c);
-//        vertColors.Add(c);
-//        vertColors.Add(c);
+        layerCurveVal += scale * curveSpeed* yScale;
 
-//        positions.Add(centerPos);
-//        curveVals.Add((curveX, curveZ));
+        var curveX = Mathf.Sin(layerCurveVal + curveOffset * yScale * (2*1f/yScale)) * stemCurveScaleCirc;
+        var curveZ = Mathf.Cos(layerCurveVal + curveOffset * yScale * (2 * 1f / yScale)) * stemCurveScaleCirc;
 
-//        var newTris = new[]
-//        {
-//            vertStart + 1,
-//            vertStart,
-//            vertStart + 5,
+        var centerPos = new Vector3(curveX, curveZ, 0);
+        var lastPos = positions[positions.Count - 1];
+        var dir = (centerPos - lastPos).normalized;
 
-//            vertStart,
-//            vertStart + 4,
-//            vertStart + 5,
+        //        (var left, var right, var fwd, var bwd) = GetVectors(dir);
+        var left = new Vector3(-dir.y, dir.x).normalized;
+        var right = -left;
+        var fwd = new Vector3(0f, -dir.z, dir.y).normalized;
+        var bwd = -fwd;//new Vector3(0f, dir.z, -dir.y).normalized;
 
-//            vertStart + 2,
-//            vertStart + 1,
-//            vertStart + 5,
+        if (centerPos.x <= 0 && centerPos.y > 0 || centerPos.x < 0f && centerPos.y < 0)
+        {
+            verts.Add(centerPos + right * scale);
+            verts.Add(centerPos + fwd * scale);
+            verts.Add(centerPos + left * scale);
+            verts.Add(centerPos + bwd * scale);
+        }
+        else
+        {
+            verts.Add(centerPos + right * scale);
+            verts.Add(centerPos + bwd * scale);
+            verts.Add(centerPos + left * scale);
+            verts.Add(centerPos + fwd * scale);
+        }
 
-//            vertStart + 6,
-//            vertStart + 2,
-//            vertStart + 5,
+        uvVal += scale;
 
-//            vertStart + 2,
-//            vertStart + 7,
-//            vertStart + 3,
+        uv.Add(new Vector2(uvVal, 0));
+        uv.Add(new Vector2(uvVal, 0.5f));
+        uv.Add(new Vector2(uvVal, 1f));
+        uv.Add(new Vector2(uvVal, .5f));
 
-//            vertStart + 2,
-//            vertStart + 6,
-//            vertStart + 7,
+        uv2.Add(new Vector2(0, 0));
+        uv2.Add(new Vector2(0, 0));
+        uv2.Add(new Vector2(0, 0));
+        uv2.Add(new Vector2(0, 0));
 
-//            vertStart,
-//            vertStart + 3,
-//            vertStart + 7,
+        var c = new Color(centerPos.x, centerPos.y, centerPos.z, 1);
+        vertColors.Add(c);
+        vertColors.Add(c);
+        vertColors.Add(c);
+        vertColors.Add(c);
 
-//            vertStart,
-//            vertStart + 7,
-//            vertStart + 4,
-//        };
+        positions.Add(centerPos);
+        curveVals.Add((curveX, curveZ));
 
-//        tris.AddRange( newTris );
+        var newTris = new[]
+        {
+            vertStart + 1,
+            vertStart,
+            vertStart + 5,
 
-//        layerInfo.Add(new Vector4(dir.x, dir.y, dir.z, Time.timeSinceLevelLoad));
+            vertStart,
+            vertStart + 4,
+            vertStart + 5,
 
-//        currentLayers++;
-//    }
+            vertStart + 2,
+            vertStart + 1,
+            vertStart + 5,
 
-//    void ReshapeMesh()
-//    {
-//        var haveToCull = currentLayers >= maxLayers;
+            vertStart + 6,
+            vertStart + 2,
+            vertStart + 5,
 
-//        if (haveToCull)
-//        {
-//            verts.RemoveRange(0, 4);
-//            tris.RemoveRange(0, 24);
-//            layerInfo.RemoveRange(0, 1);
-//            positions.RemoveAt(0);
-//            curveVals.RemoveAt(0);
-//            uv.RemoveRange(0, 4);
-//            uv2.RemoveRange(0, 4);
-//            vertColors.RemoveRange(0, 4);
-//            currentLayers--;
-//        }
+            vertStart + 2,
+            vertStart + 7,
+            vertStart + 3,
 
-//        for (int i = 0; i < currentLayers; i++)
-//        {
-//            var info = layerInfo[i];
-//            var index = i * 4;
+            vertStart + 2,
+            vertStart + 6,
+            vertStart + 7,
 
-//            var triIndex = i * 24;
+            vertStart,
+            vertStart + 3,
+            vertStart + 7,
 
-//            var left = new Vector3(-info.y, info.x).normalized;
-//            var right = new Vector3(info.y, -info.x).normalized;
-//            var fwd = new Vector3(0f, -info.z, info.y).normalized;
-//            var bwd = new Vector3(0f, info.z, -info.y).normalized;
+            vertStart,
+            vertStart + 7,
+            vertStart + 4,
+        };
 
-//            var center = positions[i];
-//            var queryDir = center.normalized;
+        tris.AddRange(newTris);
+
+        layerInfo.Add(new Vector4(dir.x, dir.y, dir.z, Time.timeSinceLevelLoad));
+
+        currentLayers++;
+    }
+
+    void ReshapeMeshCirc()
+    {
+        var haveToCull = currentLayers >= maxLayers;
+
+        if (haveToCull)
+        {
+            verts.RemoveRange(0, 4);
+            tris.RemoveRange(0, 24);
+            layerInfo.RemoveRange(0, 1);
+            positions.RemoveAt(0);
+            curveVals.RemoveAt(0);
+            uv.RemoveRange(0, 4);
+            uv2.RemoveRange(0, 4);
+            vertColors.RemoveRange(0, 4);
+            currentLayers--;
+        }
+
+        for (int i = 0; i < currentLayers; i++)
+        {
+            var info = layerInfo[i];
+            var index = i * 4;
+
+            var triIndex = i * 24;
+
+            var left = new Vector3(-info.y, info.x).normalized;
+            var right = new Vector3(info.y, -info.x).normalized;
+            var fwd = new Vector3(0f, -info.z, info.y).normalized;
+            var bwd = new Vector3(0f, info.z, -info.y).normalized;
+
+            var center = positions[i];
+            var queryDir = center.normalized;
 
 
-//         //   center.y -= scale / 2;
-//        //    positions[i] = center;
+            //   center.y -= scale / 2;
+            //    positions[i] = center;
 
 
 
-//            (float x, float z) = curveVals[i];
+            (float x, float z) = curveVals[i];
 
-//            //center += new Vector3(x, z, 0);
+            //center += new Vector3(x, z, 0);
 
-//            if (i > 0)
-//            {
-//                var lastVals = curveVals[i - 1];
-//                var lastPos = positions[i - 1] + new Vector3(lastVals.x, 0, lastVals.z);
-//                queryDir = (center - lastPos).normalized;
-//            }
+            if (i > 0)
+            {
+                var lastVals = curveVals[i - 1];
+                var lastPos = positions[i - 1] + new Vector3(lastVals.x, 0, lastVals.z);
+                queryDir = (center - lastPos).normalized;
+            }
 
 
-////            (var left, var right, var fwd, var bwd) = GetVectors(queryDir);
+            //            (var left, var right, var fwd, var bwd) = GetVectors(queryDir);
 
-//            //verts[index] = center + right  * widthScale * scale;
-//            //verts[index + 1] = center + fwd * widthScale * scale;
-//            //verts[index + 2] = center + left * widthScale * scale;
-//            //verts[index + 3] = center + bwd * widthScale * scale;
+            //verts[index] = center + right  * widthScale * scale;
+            //verts[index + 1] = center + fwd * widthScale * scale;
+            //verts[index + 2] = center + left * widthScale * scale;
+            //verts[index + 3] = center + bwd * widthScale * scale;
 
-//            for (int j = 0; j < 4; j++)
-//            {
-//                var c =vertColors[index + j];
-//               // c.g -= scale / 2;
-//                c.a = (float) i / maxLayers;
-//                vertColors[index + j] = c;
-//            }
+            for (int j = 0; j < 4; j++)
+            {
+                var c = vertColors[index + j];
+                // c.g -= scale / 2;
+                c.a = (float)i / maxLayers;
+                vertColors[index + j] = c;
+            }
 
-//            if (haveToCull)
-//            {
-//                for (int t = 0; t < 24; t++)
-//                {
-//                    tris[triIndex + t] -= 4;
-//                }
-//            }
-//        }
-//    }
-     */
+            if (haveToCull)
+            {
+                for (int t = 0; t < 24; t++)
+                {
+                    tris[triIndex + t] -= 4;
+                }
+            }
+        }
+    }
+
 }

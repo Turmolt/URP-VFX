@@ -35,6 +35,7 @@ public class FlowerManager : MonoBehaviour
     public AnimationCurve BloomCurve;
 
     public bool IsStatic;
+    public Vector3 StaticStartRot;
 
     private void Start()
     {
@@ -80,7 +81,8 @@ public class FlowerManager : MonoBehaviour
         var bloomDelta = Random.Range(-maxBloomDelta, maxBloomDelta);
         bloomTime = baseBloomTime + bloomDelta;
 
-        if(!IsStatic) transform.localScale = Vector3.zero;
+        if (!IsStatic) transform.localScale = Vector3.zero;
+        else transform.localEulerAngles = StaticStartRot;
         
         SetMaterialBloom();
     }
