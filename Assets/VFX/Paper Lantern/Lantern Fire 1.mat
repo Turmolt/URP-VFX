@@ -1,0 +1,43 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 6
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Lantern Fire 1
+  m_Shader: {fileID: -6465566751694194690, guid: 98cc01e03cc3ea54cb049c1a30ae79ce, type: 3}
+  m_ShaderKeywords: 
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - unity_Lightmaps:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - unity_LightmapsInd:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - unity_ShadowMasks:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Floats:
+    - Vector1_03a09650abe64fd78e3aac68b36f3810: 1
+    - Vector1_46531be80bd44a4cb43d79aee7ce1e23: -0.25
+    - Vector1_553ee06154254f789d29a34531a82783: 1
+    - Vector1_6862e5cd8a494eaeaeab55ff92493fe6: 0.48
+    - Vector1_b886c550c094453fa6123e2c71c717dc: 0.009569933
+    - Vector1_f923d703c39b4061be64c207b31f7cf1: 1
+    - _Random: 0
+    m_Colors: []
+  m_BuildTextureStacks: []
