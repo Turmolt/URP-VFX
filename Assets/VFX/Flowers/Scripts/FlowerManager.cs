@@ -36,6 +36,7 @@ public class FlowerManager : MonoBehaviour
 
     public bool IsStatic;
     public Vector3 StaticStartRot;
+    public Vector3 StaticStartPos;
 
     private void Start()
     {
@@ -82,13 +83,27 @@ public class FlowerManager : MonoBehaviour
         bloomTime = baseBloomTime + bloomDelta;
 
         if (!IsStatic) transform.localScale = Vector3.zero;
-        else transform.localEulerAngles = StaticStartRot;
+        else
+        {
+            transform.position = StaticStartPos;
+            transform.localEulerAngles = StaticStartRot;
+        }
         
+        SetMaterialBloom();
+    }
+
+    public void ResetFlower()
+    {
+        scale = 0f;
+        bloom = 0f;
+        transform.localScale = Vector3.zero;
         SetMaterialBloom();
     }
 
     void Update()
     {
+        if (!gameObject.activeInHierarchy) return;
+
         if (!IsStatic && scale < scaleTime)
         {
             scale += Time.deltaTime;

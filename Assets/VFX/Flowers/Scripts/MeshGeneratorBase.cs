@@ -15,8 +15,9 @@ public class MeshGeneratorBase : MonoBehaviour
     protected List<Vector3> positions;
     protected List<Vector4> layerInfo; // XYZ = dir, Z = time born
 
-    void Awake()
+    public void Awake()
     {
+        if (tris != null && mesh != null) return;
         tris = new List<int>();
         verts = new List<Vector3>();
         vertColors = new List<Color>();
@@ -31,6 +32,7 @@ public class MeshGeneratorBase : MonoBehaviour
 
     public void UpdateMesh()
     {
+        if (mesh == null) Awake();
         mesh.vertices = verts.ToArray();
         mesh.triangles = tris.ToArray();
         mesh.uv = uv.ToArray();
@@ -46,7 +48,8 @@ public class MeshGeneratorBase : MonoBehaviour
     public static (Vector3 left, Vector3 right, Vector3 fwd, Vector3 bwd) GetVectors(Vector3 heading)
     {
         heading = heading.normalized;
-        var right = Vector3.Cross(heading, Vector3.up.normalized);
+        var perp = new Vector3(-heading.y, heading.x, 0).normalized;
+        var right = Vector3.Cross(heading, perp);
         var left = -right;
         var fwd = Vector3.Cross(right, heading);
         var bwd = -fwd;

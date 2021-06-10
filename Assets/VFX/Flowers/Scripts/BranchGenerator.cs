@@ -7,13 +7,10 @@ public class BranchGenerator : MeshGeneratorBase
 {
     private Vector3 direction;
 
-    public FlowerManager[] Flowers;
-    private FlowerManager flower => Flowers[Random.Range(0, Flowers.Length)];
-
     private Material material;
 
     private float runtime = 0f;
-    private float delay = 1f / 90f;
+    private float delay = 1f / 60f;
 
 
     private float scale = 0.1f;
@@ -24,7 +21,7 @@ public class BranchGenerator : MeshGeneratorBase
     private float layerCurveVal = 0.0f;
     private float curveOffset;
 
-    private int minLayers = 1;
+    private int minLayers = 5;
     private int maxLayers = 10;
 
     private float curveSpeed = 0.5f;
@@ -43,6 +40,10 @@ public class BranchGenerator : MeshGeneratorBase
     private int layer = 1;
 
     private Vector3 vineDirection;
+
+    public FlowerManager Flower;
+    private GameObject f;
+    public GameObject F => f;
 
     public void StartGrowing(Vector3 dir, Vector3 vineFwd)
     {
@@ -104,6 +105,16 @@ public class BranchGenerator : MeshGeneratorBase
         }
     }
 
+    public void DestroySelf()
+    {
+        if (Flower.transform.parent != null)
+        {
+            Flower.transform.SetParent(null);
+        }
+        
+        Destroy(gameObject, 1/30f);
+    }
+
     void CreateFlower()
     {
         var highLayerCount = targetLayerCount > 3;
@@ -114,12 +125,13 @@ public class BranchGenerator : MeshGeneratorBase
         var v = GetVectors(growthDir);
 
         var rotation = Quaternion.LookRotation(v.fwd, growthDir);
-        var flower = Instantiate(this.flower);
-        flower.Initialize();
-        flower.transform.parent = transform;
-
-        flower.transform.localPosition = lastPos * .95f;
-        flower.transform.rotation = rotation;
+        Flower = FlowerPool.Instance.PopFlower();//Instantiate(this.flower);
+        f = Flower.gameObject;
+        Flower.transform.parent = transform;
+        Flower.transform.localScale = 0.01f * Vector3.one;
+        Flower.transform.localPosition = lastPos * .95f;
+        Flower.transform.rotation = rotation;
+        Flower.gameObject.SetActive(true);
     }
 
     void InsertLayer()

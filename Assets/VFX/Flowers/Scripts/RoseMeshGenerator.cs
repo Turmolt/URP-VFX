@@ -29,7 +29,7 @@ public class RoseMeshGenerator : MeshGeneratorBase
     private float scale = 0.05f;
     private float widthScale = 1.0f;
     private float stemCurveScale = .04f;
-    private float stemCurveScaleCirc = 1.5f;
+    private float stemCurveScaleCirc = 1f;
     private float curveSpeed = 0.5f;
     private int numberOfCurves = 3;
 
@@ -62,21 +62,22 @@ public class RoseMeshGenerator : MeshGeneratorBase
         {
             GenerateCurveImage();
         }
-        life = delay * maxLayers;
-        extraBranchLife = life / 2f;
+        life = delay * maxLayers + 5f;
+        extraBranchLife = -1.75f;
         if(isVertical) CreateMeshVertical();
         else CreateMeshCirc();
     }
 
     void GenerateCurveImage()
     {
-        Texture2D tex = new Texture2D(1, 100);
+        var n = 50;
+        Texture2D tex = new Texture2D(1, n);
         float p = 0f;
-        for (int i = 0; i < 100; i++)
+        for (int i = 0; i < n; i++)
         {
             var intensity = GrowthCurve.Evaluate(p);
             tex.SetPixel(0, i, new Color(intensity, intensity, intensity, 1));
-            p += 1f / 100f;
+            p += 1f / n;
         }
         tex.Apply();
 
@@ -212,7 +213,9 @@ public class RoseMeshGenerator : MeshGeneratorBase
             branchDir.RemoveAt(0);
             if (targetBranch != null)
             {
-                Destroy(targetBranch.gameObject);
+                Debug.Log(Branch.Flower.name);
+                FlowerPool.Instance.PushFlower(Branch.Flower);
+                targetBranch.DestroySelf();
             }
         }
     }
@@ -456,7 +459,8 @@ public class RoseMeshGenerator : MeshGeneratorBase
             if (i < branches.Count && branches[i] != null)
             {
                 var b = branches[i];
-                var lifeScale = GrowthCurve.Evaluate(Mathf.Clamp01((Time.timeSinceLevelLoad - layerInfo[i].w) / (life + extraBranchLife)));
+//                var lifeScale = GrowthCurve.Evaluate(Mathf.Clamp01((Time.timeSinceLevelLoad - layerInfo[i].w) / (life + extraBranchLife)));
+                var lifeScale = GrowthCurve.Evaluate(1f-Mathf.Clamp01(i / (float) maxLayers));
 
                 //b.transform.position = center + dir.normalized * 0.75f * lifeScale * scale;
                 var localScale = Vector3.one * lifeScale * 0.1f;
@@ -470,9 +474,10 @@ public class RoseMeshGenerator : MeshGeneratorBase
             var targetBranch = branches[0];
             branches.Remove(targetBranch);
             branchDir.RemoveAt(0);
-            if (targetBranch != null)
+            if (targetBranch != null && targetBranch.Flower !=null)
             {
-                Destroy(targetBranch.gameObject);
+                FlowerPool.Instance.PushFlower(targetBranch.Flower);
+                targetBranch.DestroySelf();
             }
         }
     }
@@ -492,26 +497,26 @@ public class RoseMeshGenerator : MeshGeneratorBase
         var lastPos = positions[positions.Count - 1];
         var dir = (centerPos - lastPos).normalized;
 
-        //        (var left, var right, var fwd, var bwd) = GetVectors(dir);
-        var left = new Vector3(-dir.y, dir.x).normalized;
-        var right = -left;
-        var fwd = new Vector3(0f, -dir.z, dir.y).normalized;
-        var bwd = -fwd;//new Vector3(0f, dir.z, -dir.y).normalized;
+        (var left, var right, var fwd, var bwd) = GetVectors(dir);
+        //var left = new Vector3(-dir.y, dir.x).normalized;
+        //var right = -left;
+        //var fwd = new Vector3(0f, -dir.z, dir.y).normalized;
+        //var bwd = -fwd;//new Vector3(0f, dir.z, -dir.y).normalized;
 
-        if (centerPos.x <= 0 && centerPos.y > 0 || centerPos.x < 0f && centerPos.y < 0)
-        {
-            verts.Add(centerPos + right * scale);
-            verts.Add(centerPos + fwd * scale);
-            verts.Add(centerPos + left * scale);
-            verts.Add(centerPos + bwd * scale);
-        }
-        else
-        {
-            verts.Add(centerPos + right * scale);
-            verts.Add(centerPos + bwd * scale);
-            verts.Add(centerPos + left * scale);
-            verts.Add(centerPos + fwd * scale);
-        }
+        verts.Add(centerPos + right * scale);
+        verts.Add(centerPos + fwd * scale);
+        verts.Add(centerPos + left * scale);
+        verts.Add(centerPos + bwd * scale);
+        //if (centerPos.x > 0)
+        //{
+        //}
+        //else
+        //{
+        //    verts.Add(centerPos + right * scale);
+        //    verts.Add(centerPos + bwd * scale);
+        //    verts.Add(centerPos + left * scale);
+        //    verts.Add(centerPos + fwd * scale);
+        //}
 
         uvVal += scale;
 

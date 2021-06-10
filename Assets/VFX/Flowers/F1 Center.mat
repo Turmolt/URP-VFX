@@ -7,7 +7,7 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: F1 3
+  m_Name: F1 Center
   m_Shader: {fileID: -6465566751694194690, guid: 22d51f6f16f97cf41b306b46d1531204, type: 3}
   m_ShaderKeywords: 
   m_LightmapFlags: 4
