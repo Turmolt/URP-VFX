@@ -10,7 +10,7 @@ public class FlowerPool : MonoBehaviour
 
     private Queue<FlowerManager> flowerPool;
 
-    private int poolIncrements = 800;
+    private int poolIncrements = 1600;
 
     void Start()
     {
@@ -33,6 +33,7 @@ public class FlowerPool : MonoBehaviour
 
     public FlowerManager PopFlower()
     {
+        
         return flowerPool.Dequeue();
     }
 

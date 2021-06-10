@@ -21,8 +21,8 @@ public class BranchGenerator : MeshGeneratorBase
     private float layerCurveVal = 0.0f;
     private float curveOffset;
 
-    private int minLayers = 5;
-    private int maxLayers = 10;
+    private int minLayers = 2;
+    private int maxLayers = 8;
 
     private float curveSpeed = 0.5f;
 
@@ -41,9 +41,10 @@ public class BranchGenerator : MeshGeneratorBase
 
     private Vector3 vineDirection;
 
+    private float startDelay = 0.5f;
+    private float currentDelay = 0f;
+
     public FlowerManager Flower;
-    private GameObject f;
-    public GameObject F => f;
 
     public void StartGrowing(Vector3 dir, Vector3 vineFwd)
     {
@@ -88,6 +89,13 @@ public class BranchGenerator : MeshGeneratorBase
     void Update()
     {
         if (!growing) return;
+
+        if (currentDelay < startDelay)
+        {
+            currentDelay += Time.deltaTime;
+            return;
+        }
+
         runtime += Time.deltaTime;
         if (runtime >= delay)
         {
@@ -126,7 +134,6 @@ public class BranchGenerator : MeshGeneratorBase
 
         var rotation = Quaternion.LookRotation(v.fwd, growthDir);
         Flower = FlowerPool.Instance.PopFlower();//Instantiate(this.flower);
-        f = Flower.gameObject;
         Flower.transform.parent = transform;
         Flower.transform.localScale = 0.01f * Vector3.one;
         Flower.transform.localPosition = lastPos * .95f;

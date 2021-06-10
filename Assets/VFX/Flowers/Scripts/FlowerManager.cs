@@ -46,10 +46,20 @@ public class FlowerManager : MonoBehaviour
 
     public void Initialize()
     {
-        Base?.CreatePetals(NumPetals + Random.Range(-3, 3), PetalWidth + Random.Range(-0.2f, 0.2f));
-        Outer?.CreatePetals(NumPetals + Random.Range(-3, 3), PetalWidth + Random.Range(-0.2f, 0.2f));
-        Inner?.CreatePetals(NumPetals + Random.Range(-3, 3), PetalWidth + Random.Range(-0.2f, 0.2f));
-        Center?.CreatePetals(NumPetals + Random.Range(-3, 3), PetalWidth + Random.Range(-0.2f, 0.2f));
+        if (!IsStatic)
+        {
+            Base?.CreatePetals(NumPetals + Random.Range(-3, 3), PetalWidth + Random.Range(-0.2f, 0.2f));
+            Outer?.CreatePetals(NumPetals + Random.Range(-3, 3), PetalWidth + Random.Range(-0.2f, 0.2f));
+            Inner?.CreatePetals(NumPetals + Random.Range(-3, 3), PetalWidth + Random.Range(-0.2f, 0.2f));
+            Center?.CreatePetals(NumPetals + Random.Range(-3, 3), PetalWidth + Random.Range(-0.2f, 0.2f));
+        }
+        else
+        {
+            Base?.CreatePetals(6, PetalWidth + Random.Range(-0.2f, 0.3f));
+            Outer?.CreatePetals(5, PetalWidth + Random.Range(-0.2f, 0.3f));
+            Inner?.CreatePetals(3, PetalWidth + Random.Range(-0.2f, 0.3f));
+            Center?.CreatePetals(NumPetals + Random.Range(-1, 1), PetalWidth + Random.Range(-0.2f, 0.3f));
+        }
 
         bloom = IsStatic ? 1f : 0f;
 

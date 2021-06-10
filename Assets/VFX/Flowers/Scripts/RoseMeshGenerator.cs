@@ -20,6 +20,7 @@ public class RoseMeshGenerator : MeshGeneratorBase
 
     private List<BranchGenerator> branches;
     private List<Vector3> branchDir;
+    private List<Vector3> branchPos;
     
     private List<(float x, float z)> curveVals;
 
@@ -33,9 +34,10 @@ public class RoseMeshGenerator : MeshGeneratorBase
     private float curveSpeed = 0.5f;
     private int numberOfCurves = 3;
 
-    private float branchChance = 1f;
+    private float branchChance = 0.3333f;
 
-    private float curveOffset => id * (Mathf.PI * 2f / numberOfCurves);
+    private float curveDelta => (Mathf.PI * 2f / numberOfCurves);
+    private float curveOffset => id * curveDelta;
 
     private float yScale = 0.25f;
     private float runtime = 0f;
@@ -54,6 +56,12 @@ public class RoseMeshGenerator : MeshGeneratorBase
     private float prevCurveZ;
 
     private bool isVertical = false;
+
+    private float smallCurveDistance = 0.01f;
+    private float smallCurveOffset = 0f;
+    private float smallCurveVal;
+
+    public int SmallID;
 #endregion
 
     void Start()
@@ -70,7 +78,7 @@ public class RoseMeshGenerator : MeshGeneratorBase
 
     void GenerateCurveImage()
     {
-        var n = 50;
+        var n = 20;
         Texture2D tex = new Texture2D(1, n);
         float p = 0f;
         for (int i = 0; i < n; i++)
@@ -495,28 +503,27 @@ public class RoseMeshGenerator : MeshGeneratorBase
 
         var centerPos = new Vector3(curveX, curveZ, 0);
         var lastPos = positions[positions.Count - 1];
+
+        var smallCurveX = Mathf.Sin(smallCurveVal + smallCurveOffset * 2f + (SmallID * curveDelta)) * smallCurveDistance;
+        var smallCurveZ = Mathf.Cos(smallCurveVal + smallCurveOffset * 2f + (SmallID * curveDelta)) * smallCurveDistance;
+
+        smallCurveVal += scale * 2f;
+
+
+        positions.Add(centerPos);
+
         var dir = (centerPos - lastPos).normalized;
 
         (var left, var right, var fwd, var bwd) = GetVectors(dir);
-        //var left = new Vector3(-dir.y, dir.x).normalized;
-        //var right = -left;
-        //var fwd = new Vector3(0f, -dir.z, dir.y).normalized;
-        //var bwd = -fwd;//new Vector3(0f, dir.z, -dir.y).normalized;
 
-        verts.Add(centerPos + right * scale);
-        verts.Add(centerPos + fwd * scale);
-        verts.Add(centerPos + left * scale);
-        verts.Add(centerPos + bwd * scale);
-        //if (centerPos.x > 0)
-        //{
-        //}
-        //else
-        //{
-        //    verts.Add(centerPos + right * scale);
-        //    verts.Add(centerPos + bwd * scale);
-        //    verts.Add(centerPos + left * scale);
-        //    verts.Add(centerPos + fwd * scale);
-        //}
+        var smallOffset = left * smallCurveX + fwd * smallCurveZ;
+
+        centerPos += smallOffset;
+
+        verts.Add(centerPos + right * scale / 4f);
+        verts.Add(centerPos + fwd * scale / 4f);
+        verts.Add(centerPos + left * scale / 4f);
+        verts.Add(centerPos + bwd * scale / 4f);
 
         uvVal += scale;
 
@@ -536,7 +543,6 @@ public class RoseMeshGenerator : MeshGeneratorBase
         vertColors.Add(c);
         vertColors.Add(c);
 
-        positions.Add(centerPos);
         curveVals.Add((curveX, curveZ));
 
         var newTris = new[]
